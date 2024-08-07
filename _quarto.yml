@@ -3,13 +3,11 @@ project:
     output-dir: docs
 
 website:
-  title: "SDV"
-  navbar:
-    left:
-      - href: main.qmd
+  title: "Spotify Data Visualization"
+  
+
 
 format:
   html: 
     theme: cosmo
-    css: styles.css
     toc: true

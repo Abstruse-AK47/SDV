@@ -1,0 +1,442 @@
+---
+ngltitle: "Main"
+format:
+  html:
+    code-fold: false 
+    column: page 
+jupyter: python3
+---
+
+
+
+```{python}
+import numpy as np 
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.pyplot import figure
+```
+
+# Importing the data set
+
+
+```{python}
+df = pd.read_csv("Input/spotify-2023.csv", encoding = 'latin-1')
+df.head()
+```
+
+```{python}
+df.info()
+```
+
+```{python}
+df.isna().sum()
+```
+
+```{python}
+df.shape
+```
+
+```{python}
+df.describe()
+```
+
+```{python}
+fig, ax = plt.subplots(figsize=(10,10))
+sns.heatmap(df.corr(numeric_only=True), annot=True, linewidth=.5, ax=ax)
+plt.show()
+```
+# Converting column types
+
+```{python}
+df['streams'] = pd.to_numeric(df['streams'], errors= 'coerce')
+df['in_deezer_playlists'] = pd.to_numeric(df['in_deezer_playlists'], errors= 'coerce')
+df['in_shazam_charts'] = pd.to_numeric(df['in_shazam_charts'],errors='coerce')
+```
+# Handling missing values
+
+
+```{python}
+df['key'] = df['key'].fillna('Unknown')
+df['in_shazam_charts'] = df['in_shazam_charts'].fillna(0)
+
+#Fill NaNs with zero or another appropriate value
+df.fillna(0, inplace= True)
+
+#Ensure all columns have finite value
+df.replace([float('inf'), float('-inf')], 0, inplace=True)
+```
+# Dataset for the songs released in 2023
+
+
+```{python}
+#filtering data according to year 2023
+year_2023 = df[df['released_year']==2023]
+year_2023.head()
+```
+
+
+# Top 5 songs and their artists
+
+```{python}
+top_songs_and_artists= df[['track_name','artist(s)_name','streams']].sort_values(by='streams',ascending=False).head()
+top_songs_and_artists
+```
+
+# Creating Plot
+
+```{python}
+#Set the style
+sns.set(style="whitegrid")
+fig, ax = plt.subplots(figsize=(10, 6))
+bars = sns.barplot(
+  x = 'streams',
+  y = 'track_name',
+  hue='track_name' ,
+  data = top_songs_and_artists,
+  palette= "viridis",
+  edgecolor= 'black'
+)
+
+# Add annotations
+for bar in bars.patches:
+  plt.annotate(
+    format(bar.get_width(), ','),
+    (bar.get_width(), bar.get_y() + bar.get_height() / 2),
+    ha = 'center',
+    va = 'center',
+    xytext=(5,0),
+    textcoords='offset points'
+  )
+
+# Set titles and labels
+ax.set_title("Top 5 Songs and The Artists", fontsize = 16, weight = 'bold')
+ax.set_xlabel("Number of Streams", fontsize=14)
+ax.set_ylabel("Tracks' Names", fontsize= 14)
+
+#Remove the top and right spines 
+sns.despine(left = True, bottom = True)
+#show the plot
+plt.show()
+```
+
+# Creating Interractive Plot
+
+```{python}
+import plotly.express as px
+
+#Create the plot
+fig = px.bar(
+  top_songs_and_artists,
+  x='streams',
+  y='track_name',
+  text = 'streams',
+  color = 'streams',
+  color_continuous_scale='viridis',
+  title="Top 5 Songs and The Artists",
+)
+
+#Update the layout
+fig.update_layout(
+  xaxis_title="Number of Streams",
+  yaxis_title= "Tracks' Names",
+  title_font_size=22,
+  title_font_family="Arial",
+  xaxis=dict(showgrid=False),
+  yaxis=dict(showgrid=False)
+)
+
+#Update the traces
+fig.update_traces(texttemplate='%{text:,}', textposition='outside')
+
+#show the plot
+fig.show()
+```
+# Numeber of songs over year on Spotify
+
+
+```{python}
+year_song= df.groupby('released_year')['track_name'].count()
+year_song
+```
+
+```{python}
+#Set the style
+sns.set(style = "whitegrid")
+
+# First plot: Number of songs over years
+fig, ax1 = plt.subplots(figsize=(12,6))
+ax1.plot(year_song.index,year_song.values,marker='o', linestyle='-', color='green',label='All years')
+
+ax1.set_xlabel("Released Years", fontsize=14),
+ax1.set_ylabel("Number of Tracks", fontsize= 14),
+ax1.set_title("Released Songs Over Years on Spotify", fontsize=16, weight='bold')
+ax1.legend()
+ax1.grid(True)
+
+# show the plot
+plt.show()
+```
+
+```{python}
+year1= df[(df['released_year']>=2018) & (df['released_year']<= 2023)]
+year2=year1.groupby('released_year')['track_name'].count()
+year2
+```
+
+```{python}
+fig, ax2 = plt.subplots(figsize=(12,6))
+ax2.plot(year2.index, year2.values,marker='o', linestyle='-', color='green',label='2018-2023')
+
+ax2.set_xlabel("Released Years", fontsize=14),
+ax2.set_ylabel("Number of Tracks", fontsize= 14),
+ax2.set_title("Released Songs Over Past 6 Years on Spotify", fontsize=16, weight='bold')
+ax2.legend()
+ax2.grid(True)
+
+# show the plot
+plt.show()
+```
+# Interractive plots
+
+
+```{python}
+
+#First plot: Number of songs over years
+fig1 = px.line(
+  year_song.reset_index(),
+  x = 'released_year',
+  y = 'track_name',
+  title= 'Released Songs Over years on Spotify',
+  labels= {'released_year': 'Released Years', 'track_name': 'Number of Tracks'}
+)
+
+fig1.update_traces(mode='lines+markers',line_color="green")
+fig1.update_layout(title_font_size=22, title_font_family="Arial")
+
+# Second plot: Number of songs over the past 6 years
+fig2 = px.line(
+  year2.reset_index(),
+  x = 'released_year',
+  y = 'track_name',
+  title= 'Released Songs Over the past 6 years on Spotify',
+  labels= {'released_year': 'Released Years', 'track_name': 'Number of Tracks'}
+)
+
+fig2.update_traces(mode='lines+markers',line_color="green")
+fig2.update_layout(title_font_size=22, title_font_family="Arial")
+
+#show the plots
+fig1.show()
+fig2.show()
+```
+# Playlist vs streams
+
+
+```{python}
+# Create subplots
+fig, axs = plt.subplots(1,2, figsize = (16,6), sharey=True)
+
+#Scatter plots for Spotify Playlists vs Streams
+axs[0].scatter(df['in_spotify_playlists'],df['streams'],color='blue',alpha=0.5)
+axs[0].set_xlabel('Number of Spotify Playlists')
+axs[0].set_ylabel('Streams')
+axs[0].set_title('Spotify Playlists vs Streams')
+axs[0].grid(True)
+
+#Scatter plot for Apple Playlists vs Streams
+axs[1].scatter(df['in_apple_playlists'],df['streams'],color='green',alpha=0.5)
+axs[1].set_xlabel('Number of Apple Playlists')
+axs[1].set_ylabel('Streams')
+axs[1].set_title('Apple Playlists vs Streams')
+axs[1].grid(True)
+
+#Set a common title
+fig.suptitle('Number of Playlists vs Streams (Spotify vs Apple Music)', fontsize=16)
+plt.show()
+```
+# Analyzing features
+
+
+```{python} 
+#Select the columns for analysis
+features = ['danceability_%','valence_%','energy_%','acousticness_%','instrumentalness_%','liveness_%','speechiness_%']
+sns.pairplot(df[features],diag_kind='kde', height= 1.75)
+plt.suptitle('Pairwise Relationships between Audio Feature',y=1.02)
+plt.show()
+```
+# Creating radar Chart for 1st song
+
+
+```{python}
+from math import pi
+def create_radar_chart(df, row, title):
+  categories = list(df[features].columns)
+  values = df[features].loc[row].values.flatten().tolist()
+  values += values[:1]
+
+  angles = [n/ float(len(categories)) * 2 * pi for n in range(len(categories))]
+  angles += angles[:1]
+
+  ax = plt.subplot(111, polar=True)
+  plt.xticks(angles[:-1],categories,color='grey',size=8)
+  ax.plot(angles,values,linewidth=1,linestyle='solid')
+  ax.fill(angles,values,'b',alpha=0.1)
+  plt.title(title,size=11,color='b',y=1.1)
+
+
+plt.figure(figsize=(6,6))
+create_radar_chart(df,0,df['track_name'].iloc[0])
+plt.show()
+```
+# Creating clusters
+
+
+```{python}
+from sklearn.cluster import KMeans
+kmeans = KMeans(n_clusters=5, random_state=0, n_init=10).fit(df[features])
+df['cluster']= kmeans.labels_
+
+#plot clusters
+plt.figure(figsize=(12,8))
+sns.scatterplot(x='danceability_%', y='energy_%', hue='cluster', palette='viridis', data=df, alpha=0.7)
+plt.title('Cluster Analysis of Audio Features')
+plt.xlabel('Danceability (%)')
+plt.ylabel('Energy (%)')
+plt.show()
+```
+# Trends of the future over time
+
+```{python}
+audio_features = ['danceability_%','valence_%','energy_%','acousticness_%','instrumentalness_%','liveness_%','speechiness_%']
+trends = df.groupby('released_year')[audio_features].mean().reset_index()
+
+# Plotting trends over time
+fig, ax = plt.subplots(len(audio_features),1, figsize=(14,20),sharex=True)
+for i, feature in enumerate(audio_features):
+  sns.lineplot(x='released_year', y = feature, data=trends, ax =ax[i])
+  ax[i].set_title(f'Trends of {feature.replace("_%","")} over Years')
+  ax[i].set_ylabel(feature.replace("_%"," (%)"))
+
+plt.xlabel('Released Year')
+plt.tight_layout()
+plt.show()
+```
+# Heatmap for frequency of the chart appearance
+
+```{python}
+heatmap_data= df[['in_spotify_charts','in_apple_charts','in_deezer_charts','in_shazam_charts']]
+
+plt.figure(figsize=(10,8))
+sns.heatmap(heatmap_data.corr(),annot=True,cmap='coolwarm',fmt= '.2f')
+plt.title('Correlation Heatmap of Chart Apperances')
+plt.show()
+```
+# Max Difference between danceability and energy
+
+```{python}
+yearly_data = df.groupby('released_year').agg({'danceability_%': 'mean', 'energy_%':'mean'}).reset_index()
+
+fig, ax = plt.subplots(figsize=(10,6))
+
+#Plot danceability and energy as plot lines
+ax.plot(yearly_data['released_year'], yearly_data['danceability_%'], label='Danceability', color = 'blue')
+ax.plot(yearly_data['released_year'], yearly_data['energy_%'], label='Energy',color = 'salmon')
+
+#Highlight the maximum difference
+yearly_data['difference'] = abs(yearly_data['danceability_%'] - yearly_data['energy_%'])
+max_diff_year=  yearly_data.loc[yearly_data['difference'].idxmax()]
+
+# Annotations with text in the bottom left corner
+ax.annotate(f"Max diff: {max_diff_year['difference']:.2f}%",
+            xy=(max_diff_year['released_year'],max_diff_year['danceability_%']),
+            xytext=(0.65, 0.25),# Fractional Cordinates (0.05,0.05) for the bottom left corner
+            textcoords= 'figure fraction',
+            arrowprops={'arrowstyle':"->",'color':'gray'},ha ='left')
+
+ax.set_xlabel('Year')
+ax.set_ylabel('Percentage')
+ax.set_title('Average Danceability and Energy by Year')
+ax.legend()
+
+plt.show()
+```
+
+```{python}
+# Scatter Plot with Trend Line: Number of Artists vs Realead Year
+def scatter_plot_with_trendline(df, x_col,y_col, title, xlabel, ylabel):
+  plt.figure(figsize=(10,6))
+  sns.regplot(x=df[x_col],y=df[y_col],scatter_kws={'alpha':0.5, 's':10}, line_kws={'color':'red'})
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+  plt.grid(True)
+  plt.show()
+
+scatter_plot_with_trendline(df, 'released_year', 'artist_count', 'Number of Artist vs Released Year', 'Release Year', 'Number of Artists')
+```
+# Max collaborations
+
+```{python}
+# Add a new column to indicate if the track is a collaboration (more than one artist)
+df['is_collaboration']= df['artist_count'] > 1
+
+# Filter the DataFrame to include only the years between 1990 and 2023
+filtered_df= df[(df['released_year']>= 1995) & (df['released_year'] <=2023)]
+
+# Group by released year and count the number of collaboration and solo tracks 
+yearly_collaborations = filtered_df.groupby('released_year')['is_collaboration'].sum().reset_index()
+yearly_solo_tracks = filtered_df.groupby('released_year')['is_collaboration'].count().reset_index()
+yearly_solo_tracks['is_collaboration'] -= yearly_collaborations['is_collaboration']
+
+# Combine the data into a single DataFrame for plotting 
+yearly_data = pd.DataFrame({'Year':yearly_collaborations['released_year'],
+                            'Collaborations': yearly_collaborations['is_collaboration'],
+                            'Solo Tracks': yearly_solo_tracks['is_collaboration']
+                            })
+# Plot
+plt.figure(figsize=(12,6))
+plt.stackplot(yearly_data['Year'], yearly_data['Solo Tracks'], yearly_data['Collaborations'], labels= ['Solo Tracks','Collaborations'],colors = ['skyblue','salmon'])
+plt.xlabel('Release Year')
+plt.ylabel('Number of Tracks')
+plt.title('Number of Solo Tracks and Collaborations by Released Year(1990-2023)')
+plt.legend(loc = 'upper left')
+plt.grid(axis = 'y', linestyle = '--', alpha = 0.7)
+
+# Highlight the year with the most collaborations
+
+max_collab_year = yearly_data.loc[yearly_data['Collaborations'].idxmax()]
+plt.annotate(
+             f"Max collaborations: {max_collab_year['Collaborations']}", 
+             xy = (max_collab_year['Year'], max_collab_year['Collaborations']),
+             xytext= (max_collab_year['Year'], max_collab_year['Collaborations'] + 240),
+             arrowprops = dict(facecolor='black', arrowstyle = '->'), ha = 'center'
+             )
+
+plt.show()
+```
+
+```{python}
+df.head()
+```
+# Streams by Music Mode
+
+```{python}
+plt.figure(figsize=(10, 6))
+sns.set_theme(style = "whitegrid")
+
+#Create violin plot with customizations
+sns.violinplot(data=df, x="mode", y="streams",hue = "mode", palette="Set3", inner="quartile",legend=False)
+
+#Adding titles and labels
+plt.title('Streams by Music Mode')
+plt.xlabel('Mode')
+plt.ylabel('Sterams')
+
+#Adjusting layout
+plt.tight_layout()
+
+#Show plot
+plt.show()
+
+```

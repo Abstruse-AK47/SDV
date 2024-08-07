@@ -1,0 +1,15 @@
+project:
+    type: website
+    output-dir: out
+
+website:
+  title: "SDV"
+  navbar:
+    left:
+      - href: main.qmd
+
+format:
+  html: 
+    theme: cosmo
+    css: styles.css
+    toc: true
